@@ -1,0 +1,23 @@
+# create file ".gitignore" in the work dirrectory!
+
+# no .log files
+*.log
+
+# no .* files
+.*
+
+# ignore all files in the venv/ dirrectory
+venv/
+
+# ignore doc/notes.txt, but not doc/server/arch.txt
+doc/*.txt
+
+# ignore all .pdf files in the doc/ directory
+doc/**/*.pdf
+
+
+'some file.py'
+shot_ticket.py
+shot_query.py
+main.py
+
