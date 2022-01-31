@@ -4,6 +4,8 @@ SELECT * FROM shift_route_round;
 SELECT wd_date, shrr_id, proceeds FROM working_date WHERE EXTRACT(months FROM wd_date) = 11;
 SELECT * FROM planned_tasks_for_revenue WHERE EXTRACT(months FROM ptfr_date) = 10;
 SELECT * FROM ticket WHERE EXTRACT(months FROM t_date) = 11;
+SELECT * FROM planned_schedule WHERE shrr_id = 20;
+SELECT shrr_id FROM planned_schedule GROUP BY shrr_id HAVING COUNT(psch_id) >1;
 SELECT * FROM reserve WHERE EXTRACT(months FROM r_date) = 10;
 SELECT * FROM planned_schedule;
 SELECT * FROM flight;

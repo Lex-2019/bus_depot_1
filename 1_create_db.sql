@@ -107,7 +107,7 @@ CREATE TABLE IF NOT EXISTS working_date (
     shrr_id           integer            NOT NULL,
                       FOREIGN KEY (shrr_id) REFERENCES  shift_route_round(shrr_id),
     proceeds          decimal(5,2)       NOT NULL, -- выручка
-    number_of_flights varchar(4)         NOT NULL, -- количество рейсов - выполнено
+    number_of_flights varchar(6)         NOT NULL, -- количество рейсов - выполнено
     waybill           integer            NOT NULL,
                       CONSTRAINT waybill_value
                       CHECK(waybill > 0),

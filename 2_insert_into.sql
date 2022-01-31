@@ -2,7 +2,7 @@ SET search_path TO bus_depot_1, public;
 
 -- обычный день, проверяем наличие:
 SELECT shrr_id FROM shift_route_round
-WHERE shift = 2 AND route = '18' AND round = 17;
+WHERE shift = 1 AND route = '18' AND round = 25;
 
 -- в случае отсутсвия оф."выхода" ('21', '52'), устанавливать номер от 1 и выше:
 SELECT * FROM shift_route_round WHERE shift = 2 AND route = '21';
@@ -12,6 +12,7 @@ INSERT INTO shift_route_round (shift, route, round )
     VALUES (2, '17', 13);   -- буквенные маршруты дописывать кирилицей
 
 -- данные с путевого и була:
+SELECT * FROM working_date WHERE shrr_id = 61;
 INSERT INTO working_date (wd_date, shrr_id, proceeds, number_of_flights, waybill,
                           start_of_time, end_of_time, time_duration)
     VALUES ('2021-10-31', 17, 171.50 /*выручка*/, '6+1', 90001, '14:06', '21:09', '7:03');
@@ -34,7 +35,7 @@ INSERT INTO reserve VALUES('2021-09-28', '13:00', '14:00', NULL /*'...or some co
 
  -- плановые задания по выручке:
 SELECT * FROM planned_tasks_for_revenue
-    WHERE shrr_id = 58 AND EXTRACT(month FROM ptfr_date) = 11;
+    WHERE shrr_id = 42 AND EXTRACT(month FROM ptfr_date) = 11;
 INSERT INTO planned_tasks_for_revenue
     VALUES ('2021-11-01' /*менять только месяц*/, 7 /*shrr_id*/, 177.16 /*будни*/,
                                                 NULL /*сб*/, NULL /* вс*/, NULL /*modified_plan*/);
@@ -43,22 +44,23 @@ UPDATE planned_tasks_for_revenue
     WHERE shrr_id = 58 AND EXTRACT(month FROM ptfr_date) = 11;
 
 -- графики рейсов по плану:
-SELECT * FROM planned_schedule WHERE shrr_id = 59;
+SELECT * FROM planned_schedule WHERE shrr_id = 61;
 INSERT INTO planned_schedule (shrr_id, week_id,
                               start_of_time, end_of_time, time_duration,
                               second_start_of_time, second_end_of_time, second_time_duration,
                               number_of_flights)
-    VALUES (59, 1 /*or 2 - day off*/, '15:46', '1:31', '9:15',
-            /*'16:16', '19:07', '2:51',*/ NULL, NULL, NULL, '8+1');
+    VALUES (61, 2 /*or 2 - day off*/, '5:27', '14:55', '8:34',
+            /*'16:16', '19:07', '2:51',*/ NULL, NULL, NULL, '10+1');
 UPDATE planned_schedule
     SET time_duration = '8:04'
     WHERE shrr_id = 51;
 
 -- при наличии доп маршрутов:
 SELECT * FROM flight
-WHERE psch_id IN (SELECT psch_id FROM planned_schedule WHERE shrr_id = 29) AND
-      EXTRACT(month FROM f_date) = 8;
-
+WHERE psch_id IN (
+                  SELECT psch_id FROM planned_schedule WHERE shrr_id = 29 AND week_id = 1
+      ) AND EXTRACT(month FROM f_date) = 8;
+SELECT psch_id FROM planned_schedule WHERE shrr_id = 2 AND week_id = 1;
 INSERT INTO flight (psch_id, flight, plan, number_of_flights, f_date) 
     VALUES (13, '21в', 24.15, '1', '2021-10-01');  -- буквенные маршруты дописывать кирилицей
 
