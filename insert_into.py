@@ -104,46 +104,40 @@ def insert_my_date():
 
     local_marker = True  # маркер цикла
 
-    print(f"\nПоследняя запись в базе данных датирована {wd_date}.\n")
-    print("Желаете ли продолжить внесение данных?\n")
-    # Выбор пункта меню:
-    x = yes_no_input("введите \'Yes\' или \'No\'. ")
-
-    if x == "1":
-        while local_marker:
-            shift = int(input("Введите номер смены: "))
-            route = str(input("""Введите номер маршрута
+    while local_marker:
+        shift = int(input("Введите номер смены: "))
+        route = str(input("""Введите номер маршрута
 (буквенные маршруты дописывать кирилицей, в нижнем регистре): """))
-            sh_round = int(input("Введите номер выхода: "))
+        sh_round = int(input("Введите номер выхода: "))
 
-            wd_date = str(input("Введите дату выхода на рейс (пример: 2021-10-31): "))
-            # подумать о сокращённом варианте ввода. пример: 21-11-14
-            proceeds = float(input("Введите сумму выручки: "))
-            number_of_flights = str(input("Введите количество выполненных рейсов (пример: 9+1): "))
-            waybill = int(input("Введите номер путевого листа: "))
+        wd_date = str(input("Введите дату выхода на рейс (пример: 2021-10-31): "))
+        # подумать о сокращённом варианте ввода. пример: 21-11-14
+        proceeds = float(input("Введите сумму выручки: "))
+        number_of_flights = str(input("Введите количество выполненных рейсов (пример: 9+1): "))
+        waybill = int(input("Введите номер путевого листа: "))
 
-            print("\nДанный график \"1\" - сменный или \"2\" - пиковой?")
-            shift_or_rush_hour = get_input("12", "    Ваш выбор? \n")
+        print("\nДанный график \"1\" - сменный или \"2\" - пиковой?")
+        shift_or_rush_hour = get_input("12", "    Ваш выбор? \n")
 
-            if shift_or_rush_hour == "1":
-                first_shift.append(str(input("Введите время начала рейса по факту (пример: 14:10): ")))
-                first_shift.append(str(input("Введите время окончания рейса по факту (пример: 23:45): ")))
-                first_shift.append(str(input("Введите фактическую продолжительность рейса (пример: 8:10): ")))
-                print(f"""\n    Давайте проверим введенные данные.
+        if shift_or_rush_hour == "1":
+            first_shift.append(str(input("Введите время начала рейса по факту (пример: 14:10): ")))
+            first_shift.append(str(input("Введите время окончания рейса по факту (пример: 23:45): ")))
+            first_shift.append(str(input("Введите фактическую продолжительность рейса (пример: 8:10): ")))
+            print(f"""\n    Давайте проверим введенные данные.
 Ваша смена - {shift}, маршрут номер "{route}", выход - {sh_round}.
 Дата рейса - {wd_date}.
 Выручка составила {proceeds} рублей, количество рейсов - "{number_of_flights}", путевой лист номер 00{waybill}.
 Начало рейса в "{first_shift[0]}", окончание в "{first_shift[1]}", продолжительность рейса "{first_shift[2]}".
 """)
-            elif shift_or_rush_hour == "2":
-                first_shift.append(str(input("Введите время начала рейса 1-го пика (пример: 05:10): ")))
-                first_shift.append(str(input("Введите время окончания рейса 1-го пика (пример: 10:45): ")))
-                first_shift.append(str(input("Введите фактическую продолжительность рейса 1-го пика (пример: 2:10): ")))
-                second_rush_hour.append(str(input("Введите время начала рейса 2-го пика (пример: 14:25): ")))
-                second_rush_hour.append(str(input("Введите время окончания рейса 2-го пика (пример: 20:20): ")))
-                second_rush_hour.append(str(input("Введите фактическую продолжительность рейса 2-го пика \
-                                                   (пример: 4:35): ")))
-                print(f"""\n    Давайте проверим введенные данные.
+        elif shift_or_rush_hour == "2":
+            first_shift.append(str(input("Введите время начала рейса 1-го пика (пример: 05:10): ")))
+            first_shift.append(str(input("Введите время окончания рейса 1-го пика (пример: 10:45): ")))
+            first_shift.append(str(input("Введите фактическую продолжительность рейса 1-го пика (пример: 2:10): ")))
+            second_rush_hour.append(str(input("Введите время начала рейса 2-го пика (пример: 14:25): ")))
+            second_rush_hour.append(str(input("Введите время окончания рейса 2-го пика (пример: 20:20): ")))
+            second_rush_hour.append(str(input("Введите фактическую продолжительность рейса 2-го пика \
+                                               (пример: 4:35): ")))
+            print(f"""\n    Давайте проверим введенные данные.
 Ваша смена - {shift}, маршрут номер "{route}", выход - {sh_round}.
 Дата рейса - {wd_date}.
 Выручка составила {proceeds} рублей, количество рейсов - "{number_of_flights}", путевой лист номер 00{waybill}.
@@ -151,42 +145,33 @@ def insert_my_date():
 Начало 2-го пика в "{second_rush_hour[0]}", окончание в "{second_rush_hour[1]}", \
 продолжительность пика "{second_rush_hour[2]}".
 """)
+        print("Правильно ли введены данные?\n")
+        # Выбор пункта меню:
+        x = yes_no_input("введите \'Yes\' или \'No\'. ")
 
-            # написать функцию по промежуточной проверке точности введенных данных пользователем
-            # отдельно для смен и пиков
-            print("Правильно ли введены данные?\n")
-
-            # Выбор пункта меню:
-            x = yes_no_input("введите \'Yes\' или \'No\'. ")
-
-            if x == "1":
-                # проверяем наличие id смены/маршрута/выхода:
-                record_search = f"""
+        if x == "1":
+            # проверяем наличие id смены/маршрута/выхода:
+            record_search = f"""
 SELECT COUNT(shrr_id) FROM shift_route_round
 WHERE shift = {shift} AND route = '{route}' AND round = {sh_round};
 """
-                # если нет, добавляем:
-                create_id = f"""
+            # если нет, добавляем:
+            create_id = f"""
 INSERT INTO shift_route_round (shift, route, round)
 VALUES ({shift}, '{route}', {sh_round});
 """
-                # вывод id смены/маршрута/выхода:
-                data_search = f"""
+            # вывод id смены/маршрута/выхода:
+            data_search = f"""
 SELECT shrr_id FROM shift_route_round
 WHERE shift = {shift} AND route = '{route}' AND round = {sh_round};
 """
-                input("Нажми Enter для продолжения...")
-                local_marker = False
-            elif x == "0":
-                # обнуляем все ранее введенные данные в списки
-                # first_shift.clear()
-                # second_rush_hour.clear()
-                print("\n Введите данные заново, и будьте внимательней: \n")
-                # рекурсивный вызов функции (предлагаем ввести значения заново):
-                # insert_my_date()
+            input("Нажми Enter для продолжения...")
+            local_marker = False
+        elif x == "0":
+            print("\n Введите данные заново, и будьте внимательней: \n")
+            first_shift.clear()
+            second_rush_hour.clear()
 
-    elif x == "0":
-        local_marker = False
 
 
 # ввод заметки / коментария:
@@ -369,6 +354,19 @@ VALUES ({data_search}, '{flight}', {local_plan}, '{local_number_of_flights}', '{
 """
 
 
+# замена рабочего дня на выходной и обратно:
+def some_holiday():
+    global data_update
+    holiday = int(input("""Введите 1, если выходной день заменяется на рабочий,
+                                   6, если рейсы в будний день ходят по расписанию субботы,
+                                   7, если рейсы в будний день ходят по расписанию воскресенья: """))
+    data_update = f"""
+UPDATE working_date
+SET holiday = {holiday}
+WHERE wd_date = '{wd_date}';
+"""
+
+
 # вставка данных о больничном:
 def data_from_sick_leave():
     global data_insertion
@@ -411,6 +409,23 @@ SELECT MAX(wd_date) FROM working_date;
         cursor.execute(last_date)
         my_query = cursor.fetchone()
         wd_date = my_query[0]
+
+        # работаем с данными с БУЛа и путевого листа:
+        print(f"\nПоследняя запись в базе данных датирована {wd_date}.\n")
+        print("Давайте внесем данные с БУЛа и путевого листа: \n")
+
+#        local_marker = True  # маркер цикла
+#        while local_marker:
+#            print("\n Требуется ли внесение данных с БУЛа и путевого листа?\n")
+#           # Выбор пункта меню:
+#            x = yes_no_input('введите \'Yes\' или \'No\'. ')
+#
+#            if x == "1":
+#                pass
+#                local_marker = False
+#            elif x == "0":
+#                local_marker = False
+
         # ввод рабочих данных с клавиатуры:
         insert_my_date()
 
@@ -530,6 +545,8 @@ WHERE shrr_id = {shrr_id} AND EXTRACT(month FROM ptfr_date) = {current_month};
             for row in my_query:
                 for i in row:
                     work_days.append(i)
+                    # после тестирования удалить:
+                    print(f"work_day[{i}] = {work_days[i]}")
             # выводим планы на экран и спрашиваем, нужно ли их изменять:
             update_plan()
 
@@ -634,14 +651,8 @@ WHERE wd_date = '{wd_date}' AND shrr_id = {shrr_id};
             x = yes_no_input('введите \'Yes\' или \'No\'. ')
 
             if x == "1":
-                holiday = int(input("""Введите 1, если выходной день заменяется на рабочий,
-        6, если рейсы в будний день ходят по расписанию субботы,
-        7, если рейсы в будний день ходят по расписанию воскресенья: """))
-                data_update = f"""
-UPDATE working_date
-SET holiday = {holiday}
-WHERE wd_date = '{wd_date}';
-"""
+                some_holiday()
+
                 cursor.execute(data_update)
                 connection.commit()
                 local_marker = False
