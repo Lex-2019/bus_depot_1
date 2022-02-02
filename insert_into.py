@@ -135,8 +135,7 @@ def insert_my_date():
             first_shift.append(str(input("Введите фактическую продолжительность рейса 1-го пика (пример: 2:10): ")))
             second_rush_hour.append(str(input("Введите время начала рейса 2-го пика (пример: 14:25): ")))
             second_rush_hour.append(str(input("Введите время окончания рейса 2-го пика (пример: 20:20): ")))
-            second_rush_hour.append(str(input("Введите фактическую продолжительность рейса 2-го пика \
-                                               (пример: 4:35): ")))
+            second_rush_hour.append(str(input("Введите фактическую продолжительность рейса 2-го пика (пример: 4:35): ")))
             print(f"""\n    Давайте проверим введенные данные.
 Ваша смена - {shift}, маршрут номер "{route}", выход - {sh_round}.
 Дата рейса - {wd_date}.
@@ -171,7 +170,6 @@ WHERE shift = {shift} AND route = '{route}' AND round = {sh_round};
             print("\n Введите данные заново, и будьте внимательней: \n")
             first_shift.clear()
             second_rush_hour.clear()
-
 
 
 # ввод заметки / коментария:
@@ -236,6 +234,11 @@ def insert_plan():
         current_year, current_month
 
     print(f"Напоминаю, что мы вносим данные на {wd_date} число.\n")
+
+    # после тестирования УДАЛИТЬ!!!
+    print(f"""work_days = {work_days}
+work_days_new = {work_days_new}
+функция insert_plan() примерно на 232 строке""")
 
     for i in someday_ru:
         x = yes_no_input(f"Надо ли внести {i}? ")
@@ -384,7 +387,6 @@ VALUES ('{sick_leave[0]}', '{sick_leave[1]}', '{sick_leave[2]}')
 
 
 def connect_postgres():
-    # global choice  # маркер главного цикла, пока не придумал, как применить...
     global cursor, connection, shrr_id, wd_date, comment, \
         record_search, data_search, create_id, data_insertion, data_update, \
         work_days, work_days_new, someday_en, \
@@ -410,21 +412,12 @@ SELECT MAX(wd_date) FROM working_date;
         my_query = cursor.fetchone()
         wd_date = my_query[0]
 
+# Настоятельно рекомендую придумать, как сделать выбор внесения данных - рейса ИЛИ резерва - в НАЧАЛЕ работы программы.
+# Потому как до резерва поди достучись!
+
         # работаем с данными с БУЛа и путевого листа:
         print(f"\nПоследняя запись в базе данных датирована {wd_date}.\n")
         print("Давайте внесем данные с БУЛа и путевого листа: \n")
-
-#        local_marker = True  # маркер цикла
-#        while local_marker:
-#            print("\n Требуется ли внесение данных с БУЛа и путевого листа?\n")
-#           # Выбор пункта меню:
-#            x = yes_no_input('введите \'Yes\' или \'No\'. ')
-#
-#            if x == "1":
-#                pass
-#                local_marker = False
-#            elif x == "0":
-#                local_marker = False
 
         # ввод рабочих данных с клавиатуры:
         insert_my_date()
@@ -463,8 +456,6 @@ VALUES ('{wd_date}', {shrr_id}, {proceeds}, '{number_of_flights}', {waybill},
         cursor.execute(data_insertion)
         connection.commit()  # коммитим вставку данных
         print("Date from waybill inserted successfully")
-        # чистим списки:
-        # first_shift.clear()
 
         # добавляем заметки, если требуется:
         local_marker = True  # маркер цикла
@@ -487,7 +478,6 @@ VALUES ('{wd_date}', {shrr_id}, {proceeds}, '{number_of_flights}', {waybill},
         local_marker = True  # маркер цикла
         while local_marker:
             print("\n Желаете ли добавить информацию о проданных проездных?\n")
-            # Выбор пункта меню:
             x = yes_no_input('введите \'Yes\' или \'No\'. ')
 
             if x == "1":
@@ -504,7 +494,6 @@ VALUES ('{wd_date}', {shrr_id}, {proceeds}, '{number_of_flights}', {waybill},
         local_marker = True  # маркер цикла
         while local_marker:
             print("\n Был ли в этот день резерв?")
-            # Выбор пункта меню:
             x = yes_no_input('введите \'Yes\' или \'No\'. ')
 
             if x == "1":
@@ -529,7 +518,6 @@ WHERE shrr_id = {shrr_id} AND EXTRACT(month FROM ptfr_date) = {current_month};
         count_tasks = my_query[0]
 
         # плановые задания по выручке - запоминаем и заносим (создаём) в бд:
-        # (возможно нужно поменять местами содержимое цикла if/else)
         if count_tasks == 0:
             print("В этом месяце план на данный маршрут ещё НЕ был внесён.")
             insert_plan()  # определяются переменные планов
@@ -544,11 +532,17 @@ WHERE shrr_id = {shrr_id} AND EXTRACT(month FROM ptfr_date) = {current_month};
             my_query = cursor.fetchall()
             for row in my_query:
                 for i in row:
-                    work_days.append(i)
-                    # после тестирования удалить:
-                    print(f"work_day[{i}] = {work_days[i]}")
+                    if i == None:  # тестирование !!!
+                        work_days.append("NULL")
+                    else:
+                        work_days.append(i)
             # выводим планы на экран и спрашиваем, нужно ли их изменять:
             update_plan()
+
+            # после тестирования УДАЛИТЬ!!!
+            print(f"""work_days = {work_days}
+запрос data_search примерно на 255 строке
+так-же тестируем строку ~ 535 - \"if i == None\"""")
 
         # если есть изменения в планах, вносим в БД:
         if work_days != work_days_new:
@@ -594,8 +588,6 @@ SELECT count(psch_id) FROM planned_schedule WHERE shrr_id = {shrr_id};
             if x == "1":
                 additional_route()  # определяются переменные планов
                 cursor.execute(data_search)  # определяется 'psch_id'
-                # my_query = cursor.fetchone()
-                # psch_id = my_query[0]
 
                 cursor.execute(data_insertion)
                 connection.commit()

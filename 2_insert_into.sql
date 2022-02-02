@@ -2,17 +2,17 @@ SET search_path TO bus_depot_1, public;
 
 -- обычный день, проверяем наличие:
 SELECT shrr_id FROM shift_route_round
-WHERE shift = 2 AND route = '18' AND round = 25;
+WHERE shift = 2 AND route = '1' AND round = 14;
 
 -- в случае отсутсвия оф."выхода" ('21', '52'), устанавливать номер от 1 и выше:
-SELECT * FROM shift_route_round WHERE shift = 2 AND route = '21';
+SELECT * FROM shift_route_round WHERE shift = 1 AND route = '52';
 
 -- если нет, добавляем:
 INSERT INTO shift_route_round (shift, route, round )
     VALUES (2, '17', 13);   -- буквенные маршруты дописывать кирилицей
 
 -- данные с путевого и була:
-SELECT * FROM working_date WHERE shrr_id = 61;
+SELECT * FROM working_date WHERE shrr_id = 10;
 INSERT INTO working_date (wd_date, shrr_id, proceeds, number_of_flights, waybill,
                           start_of_time, end_of_time, time_duration)
     VALUES ('2021-10-31', 17, 171.50 /*выручка*/, '6+1', 90001, '14:06', '21:09', '7:03');
@@ -30,21 +30,21 @@ UPDATE working_date
 INSERT INTO ticket VALUES ('2021-11-07', 1, 1, NULL, NULL);
 
 -- резерв, если требуется:
-INSERT INTO reserve VALUES('2021-09-28', '13:00', '14:00', NULL /*'...or some comment'*/);
-
+INSERT INTO reserve VALUES('2021-11-23', '5:00', '6:25', NULL /*'...or some comment'*/);
+SELECT * FROM reserve r ;
 
  -- плановые задания по выручке:
 SELECT * FROM planned_tasks_for_revenue
-    WHERE shrr_id = 63 AND EXTRACT(month FROM ptfr_date) = 11;
+    WHERE shrr_id = 10 AND EXTRACT(month FROM ptfr_date) = 11;
 INSERT INTO planned_tasks_for_revenue
-    VALUES ('2021-11-01' /*менять только месяц*/, 7 /*shrr_id*/, 177.16 /*будни*/,
+    VALUES ('2021-11-01' /*менять только месяц*/, 62 /*shrr_id*/, 143.6 /*будни*/,
                                                 NULL /*сб*/, NULL /* вс*/, NULL /*modified_plan*/);
 UPDATE planned_tasks_for_revenue
-    SET plan_weekday = NULL
-    WHERE shrr_id = 62 AND EXTRACT(month FROM ptfr_date) = 11;
+    SET plan_saturday = 126.63
+    WHERE shrr_id = 63 AND EXTRACT(month FROM ptfr_date) = 11;
 
 -- графики рейсов по плану:
-SELECT * FROM planned_schedule WHERE shrr_id = 63;
+SELECT * FROM planned_schedule WHERE shrr_id = 62;
 INSERT INTO planned_schedule (shrr_id, week_id,
                               start_of_time, end_of_time, time_duration,
                               second_start_of_time, second_end_of_time, second_time_duration,
@@ -73,7 +73,7 @@ SELECT * FROM working_date WHERE wd_date = '2021-11-01';
 -- меняем МАЗ, если требуется:
 UPDATE working_date
     SET bus_id = 2
-    WHERE wd_date = '2021-11-08' AND shrr_id = 7;
+    WHERE wd_date = '2021-11-08' AND shrr_id = 10;
 
 -- замена рабочего дня на выходной и обратно:
 UPDATE working_date
