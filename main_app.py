@@ -3,6 +3,7 @@ from psycopg import Error
 
 cursor = None
 connection = None
+global_marker = True
 
 # работа с запросами:
 record_search = ""   # проверка наличия записи в БД
@@ -96,6 +97,31 @@ def yes_no_input(message):
     # yes_no_input("Пожалуйста введите \'yes\' или \'no\'. ")
 
 
+# меню выбора ввода данных - доработать
+def main_menu():
+    global global_marker
+
+    while global_marker:
+        print("Вас приветствует программа ввода данных по выручке кондуктора \"АП-1\".")
+
+        print(" Что вы желаете ввести:")
+        print("    1. Выручка за смену")
+        print("    2. Резерв")
+        print("    3. Больничный")
+        print("    0. Выход из программы")
+
+        x = get_input("0123", "    Твой выбор? ")
+
+        if x == "0":  # преобразование в цифру будет в функции get_input
+            global_marker = False
+        elif x == "1":
+            connect_postgres()
+        elif x == "2":
+            reserve_time()
+        elif x == "3":
+            data_from_sick_leave()
+
+
 # ввод данных "с путевого листа о рейсе" в случае необходимости:
 def insert_my_date():
     global wd_date, shift, route, sh_round, proceeds, number_of_flights, waybill, \
@@ -105,12 +131,13 @@ def insert_my_date():
     local_marker = True  # маркер цикла
 
     while local_marker:
+        wd_date = str(input("Введите дату выхода на рейс (пример: 2021-10-31): "))
+
         shift = int(input("Введите номер смены: "))
         route = str(input("""Введите номер маршрута
 (буквенные маршруты дописывать кирилицей, в нижнем регистре): """))
         sh_round = int(input("Введите номер выхода: "))
 
-        wd_date = str(input("Введите дату выхода на рейс (пример: 2021-10-31): "))
         # подумать о сокращённом варианте ввода. пример: 21-11-14
         proceeds = float(input("Введите сумму выручки: "))
         number_of_flights = str(input("Введите количество выполненных рейсов (пример: 9+1): "))
@@ -139,7 +166,7 @@ def insert_my_date():
             print(f"""\n    Давайте проверим введенные данные.
 Ваша смена - {shift}, маршрут номер "{route}", выход - {sh_round}.
 Дата рейса - {wd_date}.
-Выручка составила {proceeds} рублей, количество рейсов - "{number_of_flights}", путевой лист номер 00{waybill}.
+Выручка составила {proceeds} рублей, количество рейсов - "{number_of_flights}", путевой лист номер 0{waybill}.
 Начало 1-го пика в "{first_shift[0]}", окончание в "{first_shift[1]}", продолжительность пика "{first_shift[2]}".
 Начало 2-го пика в "{second_rush_hour[0]}", окончание в "{second_rush_hour[1]}", \
 продолжительность пика "{second_rush_hour[2]}".
@@ -209,23 +236,7 @@ INSERT INTO ticket VALUES ('{wd_date}',
                            {number_of_tickets[0]}, {number_of_tickets[1]},
                            {number_of_tickets[2]}, {number_of_tickets[3]});
 """
-    number_of_tickets.clear()  # нужна ли здесь она?
-
-
-# вносим данные о резерве:
-def reserve_time():
-    global comment, data_insertion
-
-    start_of_time = str(input("Введите время начала рейса (пример: 5:00): "))
-    end_of_time = str(input("Введите время окончания рейса (пример: 10:00): "))
-
-    x = yes_no_input(f"\nНадо ли добавить комментарий? ")
-    if x == "1":
-        comment = str(input("\nВведите комментарий к данному резерву: "))
-
-    data_insertion = f"""
-INSERT INTO reserve VALUES('{wd_date}', '{start_of_time}', '{end_of_time}', '{comment}');
-"""
+    number_of_tickets.clear()
 
 
 # плановые задания по выручке:
@@ -234,11 +245,6 @@ def insert_plan():
         current_year, current_month
 
     print(f"Напоминаю, что мы вносим данные на {wd_date} число.\n")
-
-    # после тестирования УДАЛИТЬ!!!
-    print(f"""work_days = {work_days}
-work_days_new = {work_days_new}
-функция insert_plan() примерно на 232 строке""")
 
     for i in someday_ru:
         x = yes_no_input(f"Надо ли внести {i}? ")
@@ -253,7 +259,7 @@ VALUES ('20{current_year}-{current_month}-01', {shrr_id},
         {work_days[0]}, {work_days[1]}, {work_days[2]}, {work_days[3]});
 """
     data_search = f"""
-SELECT plan weekday, plan saturday, plan sunday, modified plan FROM planned_tasks_for_revenue
+SELECT plan_weekday, plan_saturday, plan_sunday, modified_plan FROM planned_tasks_for_revenue
 WHERE shrr_id = {shrr_id} AND EXTRACT(month FROM ptfr_date) = {current_month};
 """
 
@@ -370,20 +376,138 @@ WHERE wd_date = '{wd_date}';
 """
 
 
+# вносим данные о резерве:
+def reserve_time():
+    global cursor, connection, data_insertion, wd_date, comment
+
+    print(f"\n Давайте введем данные о резерве. \n")
+
+    try:
+        # Подключение к существующей базе данных
+        schema = "bus_depot_1"
+        connection = psycopg.connect(host="localhost",
+                                     port=5432,
+                                     dbname="postgres",
+                                     user="postgres",
+                                     password="sbetrieb",
+                                     options=f"-c search_path={schema},public")
+        # Курсор для выполнения операций с базой данных
+        cursor = connection.cursor()
+
+        local_marker = True
+        start_of_time = ""
+        end_of_time = ""
+
+        while local_marker:
+            wd_date = str(input("Введите дату выхода на рейс (пример: 2021-10-31): "))
+            start_of_time = str(input("Введите время начала рейса (пример: 5:00): "))
+            end_of_time = str(input("Введите время окончания рейса (пример: 10:00): "))
+
+            x = yes_no_input(f"\nНадо ли добавить комментарий? ")
+            if x == "1":
+                comment = str(input("\nВведите комментарий к данному резерву: "))
+
+            print("Правильно ли введены данные?\n")
+            print(f"""
+Время начала рейса: {start_of_time},
+Время окончания рейса: {end_of_time},
+Комментарий: {comment}.
+""")
+            # Выбор пункта меню:
+            x = yes_no_input("введите \'Yes\' или \'No\'. ")
+
+            if x == "1":
+                input("Нажми Enter для продолжения...")
+                local_marker = False
+            elif x == "0":
+                print("\n Введите данные заново, и будьте внимательней: \n")
+
+        data_insertion = f"""
+INSERT INTO reserve VALUES('{wd_date}', '{start_of_time}', '{end_of_time}', '{comment}');
+"""
+        cursor.execute(data_insertion)
+        connection.commit()
+        print("Reserve inserted successfully")
+        comment = None  # обнуляем переменную комментария для последующих вставок/изменений
+
+    except (Exception, Error) as error:
+        print("Ошибка при работе с PostgreSQL", error)
+
+    finally:
+        # if connection:
+        # Close the cursor and connection to so the server can allocate bandwidth to other requests
+        cursor.close()
+        connection.close()
+        print("Соединение с PostgreSQL закрыто")
+
+    input("Выход в главное меню...")
+    main_menu()
+
+
 # вставка данных о больничном:
 def data_from_sick_leave():
-    global data_insertion
+    global cursor, connection, data_insertion
 
-    sick_leave = []  # альтернатива трём переменным:
+    print(f"\n Давайте введем данные о больничном. \n")
 
-    sick_leave.append = str(input("Введите дату открытия больничного (пример: 2021-10-31): "))
-    sick_leave.append = str(input("Введите дату закрытия больничного (пример: 2021-10-31): "))
-    sick_leave.append = str(input("Введите причину больничного (диагноз): "))  # если потребуется
-    data_insertion = f"""
+    try:
+        # Подключение к существующей базе данных
+        schema = "bus_depot_1"
+        connection = psycopg.connect(host="localhost",
+                                     port=5432,
+                                     dbname="postgres",
+                                     user="postgres",
+                                     password="sbetrieb",
+                                     options=f"-c search_path={schema},public")
+        # Курсор для выполнения операций с базой данных
+        cursor = connection.cursor()
+
+        local_marker = True
+        sick_leave = []
+
+        while local_marker:
+            sick_leave.append = str(input("Введите дату открытия больничного (пример: 2021-10-31): "))
+            sick_leave.append = str(input("Введите дату закрытия больничного (пример: 2021-10-31): "))
+            sick_leave.append = str(input("Введите причину больничного (диагноз): "))  # если потребуется
+
+            print("Правильно ли введены данные?\n")
+            print(f"""
+Дата открытия больничного: {sick_leave[0]},
+Дата закрытия больничного: {sick_leave[1]},
+Причина больничного (диагноз): {sick_leave[2]}.
+""")
+            # Выбор пункта меню:
+            x = yes_no_input("введите \'Yes\' или \'No\'. ")
+
+            if x == "1":
+                input("Нажми Enter для продолжения...")
+                local_marker = False
+            elif x == "0":
+                print("\n Введите данные заново, и будьте внимательней: \n")
+                sick_leave.clear()
+
+        data_insertion = f"""
 INSERT INTO sick_leave (start_of_date, end_of_date, note)
 VALUES ('{sick_leave[0]}', '{sick_leave[1]}', '{sick_leave[2]}')
 """
-    sick_leave.clear()
+        cursor.execute(data_insertion)
+        connection.commit()
+        print("sick_leave inserted successfully")
+
+        sick_leave.clear()
+
+    except (Exception, Error) as error:
+        print("Ошибка при работе с PostgreSQL", error)
+
+    finally:
+        # if connection:
+        # Close the cursor and connection to so the server can allocate bandwidth to other requests
+        cursor.close()
+        connection.close()
+        print("Соединение с PostgreSQL закрыто")
+
+    input("Выход в главное меню...")
+    main_menu()
 
 
 def connect_postgres():
@@ -489,22 +613,6 @@ VALUES ('{wd_date}', {shrr_id}, {proceeds}, '{number_of_flights}', {waybill},
                 local_marker = False
             elif x == "0":
                 local_marker = False
-
-        # добавляем резерв, если требуется:
-        local_marker = True  # маркер цикла
-        while local_marker:
-            print("\n Был ли в этот день резерв?")
-            x = yes_no_input('введите \'Yes\' или \'No\'. ')
-
-            if x == "1":
-                reserve_time()
-                cursor.execute(data_insertion)
-                connection.commit()
-                print("Reserve inserted successfully")
-                local_marker = False
-            elif x == "0":
-                local_marker = False
-        comment = None  # обнуляем переменную комментария для последующих вставок/изменений
 
         # проверяем наличие планового задания в принципе:
         current_year = wd_date[2:4]
@@ -651,23 +759,6 @@ WHERE wd_date = '{wd_date}' AND shrr_id = {shrr_id};
             elif x == "0":
                 local_marker = False
 
-        # вставка данных о больничном:
-        local_marker = True  # маркер цикла
-        while local_marker:
-            print(f"\n Желаете ли добавить данные о больничном? \n")
-            # Выбор пункта меню:
-            x = yes_no_input('введите \'Yes\' или \'No\'. ')
-
-            if x == "1":
-                data_from_sick_leave()  # определяются переменные больничного листа
-
-                cursor.execute(data_insertion)
-                connection.commit()
-                print("sick_leave inserted successfully")
-
-            elif x == "0":
-                local_marker = False
-
     except (Exception, Error) as error:
         print("Ошибка при работе с PostgreSQL", error)
 
@@ -677,6 +768,8 @@ WHERE wd_date = '{wd_date}' AND shrr_id = {shrr_id};
         cursor.close()
         connection.close()
         print("Соединение с PostgreSQL закрыто")
+    input("Выход в главное меню...")
+    main_menu()
 
 
-connect_postgres()
+main_menu()

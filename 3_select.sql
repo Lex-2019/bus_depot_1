@@ -1,12 +1,12 @@
 SET search_path TO bus_depot_1, public;
 
 SELECT * FROM shift_route_round;
-SELECT wd_date, shrr_id, proceeds FROM working_date WHERE EXTRACT(months FROM wd_date) = 11;
-SELECT * FROM planned_tasks_for_revenue WHERE EXTRACT(months FROM ptfr_date) = 10;
-SELECT * FROM ticket WHERE EXTRACT(months FROM t_date) = 11;
+SELECT wd_date, shrr_id, proceeds FROM working_date WHERE EXTRACT(months FROM wd_date) = 12;
+SELECT * FROM planned_tasks_for_revenue WHERE EXTRACT(months FROM ptfr_date) = 12;
+SELECT * FROM ticket WHERE EXTRACT(months FROM t_date) = 12;
 SELECT * FROM planned_schedule WHERE shrr_id = 20;
 SELECT shrr_id FROM planned_schedule GROUP BY shrr_id HAVING COUNT(psch_id) >1;
-SELECT * FROM reserve WHERE EXTRACT(months FROM r_date) = 10;
+SELECT * FROM reserve WHERE EXTRACT(months FROM r_date) = 12;
 SELECT * FROM planned_schedule;
 SELECT * FROM flight;
 
@@ -34,7 +34,7 @@ FROM (
 		ON wd.shrr_id = shrr.shrr_id
 	RIGHT JOIN planned_tasks_for_revenue AS ptfr
 		ON shrr.shrr_id = ptfr.shrr_id
-	WHERE EXTRACT(month FROM wd_date) = 10 AND EXTRACT(month FROM ptfr_date) = 10 -- изменять согласно необходимому месяцу
+	WHERE EXTRACT(month FROM wd_date) = 12 AND EXTRACT(month FROM ptfr_date) = 12 -- изменять согласно необходимому месяцу
 ) plan_of_the_month;
 
 -- по дням:
@@ -60,7 +60,7 @@ FROM (
 		ON shrr.shrr_id = ptfr.shrr_id
 	/*JOIN planned_schedule AS ps
 	    ON shrr.shrr_id = ps.shrr_id */
-    WHERE EXTRACT(month FROM wd_date) = 10 AND EXTRACT(month FROM ptfr_date) = 10 -- изменять согласно необходимому месяцу
+    WHERE EXTRACT(month FROM wd_date) = 12 AND EXTRACT(month FROM ptfr_date) = 12 -- изменять согласно необходимому месяцу
 ) plan_of_the_month
 ORDER BY wd_date;
 
@@ -69,7 +69,7 @@ SELECT SUM(decade_only_b) AS "декада автобус",
        SUM(decade_b_and_t) AS "декада общий",
        SUM(month_only_b) AS "месяц автобус",
        SUM(month_b_and_t) AS "месяц общий"
-FROM ticket WHERE EXTRACT(month FROM t_date) = 10; -- изменять согласно необходимому месяцу
+FROM ticket WHERE EXTRACT(month FROM t_date) = 12; -- изменять согласно необходимому месяцу
 
 -- по дням:
 SELECT t_date,
@@ -83,6 +83,6 @@ LEFT JOIN working_date AS wd
     ON t_date = wd_date
 /*JOIN shift_route_round AS shrr
     ON wd.shrr_id = shrr.shrr_id*/
-WHERE EXTRACT(month FROM t_date) = 10 -- изменять согласно необходимому месяцу
+WHERE EXTRACT(month FROM t_date) = 12 -- изменять согласно необходимому месяцу
 GROUP BY t_date
 ORDER BY t_date;
