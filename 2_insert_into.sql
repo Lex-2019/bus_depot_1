@@ -2,7 +2,7 @@ SET search_path TO bus_depot_1, public;
 
 -- обычный день, проверяем наличие:
 SELECT shrr_id FROM shift_route_round
-WHERE shift = 2 AND route = '26' AND round = 12;
+WHERE shift = 1 AND route = '17' AND round = 15;
 
 -- в случае отсутсвия оф."выхода" ('21', '52'), устанавливать номер от 1 и выше:
 SELECT * FROM shift_route_round WHERE shift = 1 AND route = '21';
@@ -12,19 +12,19 @@ INSERT INTO shift_route_round (shift, route, round )
     VALUES (2, '17', 13);   -- буквенные маршруты дописывать кирилицей
 
 -- данные с путевого и була:
-SELECT * FROM working_date WHERE shrr_id = 42;
+SELECT * FROM working_date WHERE shrr_id = 75;
 INSERT INTO working_date (wd_date, shrr_id, proceeds, number_of_flights, waybill,
                           start_of_time, end_of_time, time_duration)
     VALUES ('2021-10-31', 17, 171.50 /*выручка*/, '6+1', 90001, '14:06', '21:09', '7:03');
 
 UPDATE working_date
-    SET proceeds = 166.6
-    WHERE wd_date = '2021-10-21';
+    SET wd_date = '2022-01-02'
+    WHERE shrr_id = 11 AND waybill = 121;
 
 -- добавляем заметки, если требуется:
 UPDATE working_date
-    SET note = 'отработка за вторник'
-    WHERE wd_date = '2021-12-19' AND shrr_id = 9;
+    SET note = 'торой промежуток резерва с 17:09 до 19:13 - длительность 1:04'
+    WHERE wd_date = '2022-01-02' AND shrr_id = 75;
 
 -- проездные, если требуется:
 INSERT INTO ticket VALUES ('2021-12-02', 1, NULL, 1, NULL);
@@ -35,7 +35,7 @@ SELECT * FROM reserve r ;
 
  -- плановые задания по выручке:
 SELECT * FROM planned_tasks_for_revenue
-    WHERE shrr_id = 12 AND EXTRACT(month FROM ptfr_date) = 12;
+    WHERE shrr_id = 13 AND EXTRACT(month FROM ptfr_date) = 1;
 INSERT INTO planned_tasks_for_revenue
     VALUES ('2021-11-01' /*менять только месяц*/, 62 /*shrr_id*/, 143.6 /*будни*/,
                                                 NULL /*сб*/, NULL /* вс*/, NULL /*modified_plan*/);

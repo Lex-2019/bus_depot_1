@@ -1,5 +1,10 @@
 import psycopg
 from psycopg import Error
+# import os
+# import os module
+from os import system, name
+# sleep module to display output for some time period
+from time import sleep
 
 cursor = None
 connection = None
@@ -28,7 +33,7 @@ week_id = 0
 proceeds = 0.0
 number_of_flights = ""
 waybill = 0
-first_shift = []  # время первой смены / пика
+first_shift = []       # время первой смены / пика
 second_rush_hour = []  # время второго пика
 shift_or_rush_hour = 0
 
@@ -97,28 +102,43 @@ def yes_no_input(message):
     # yes_no_input("Пожалуйста введите \'yes\' или \'no\'. ")
 
 
-# меню выбора ввода данных - доработать
+# define the clear function
+def clear():
+    # for windows
+    if name == 'nt':
+        _ = system('cls')
+
+    # for mac and linux (here, os.name is 'posix')
+    else:
+        _ = system('clear')
+    # Примечание. Используется переменная подчеркивания,
+    # потому что оболочка Python всегда сохраняет свой последний вывод в подчеркивании.
+
+
+# меню выбора ввода данных
 def main_menu():
     global global_marker
 
     while global_marker:
-        print("Вас приветствует программа ввода данных по выручке кондуктора \"АП-1\".")
-
-        print(" Что вы желаете ввести:")
+        print("  Что вы желаете ввести:\n")
         print("    1. Выручка за смену")
         print("    2. Резерв")
         print("    3. Больничный")
         print("    0. Выход из программы")
 
-        x = get_input("0123", "    Твой выбор? ")
+        x = get_input("0123", "\n    Твой выбор: ")
 
         if x == "0":  # преобразование в цифру будет в функции get_input
+            clear()
             global_marker = False
         elif x == "1":
+            clear()
             connect_postgres()
         elif x == "2":
+            clear()
             reserve_time()
         elif x == "3":
+            clear()
             data_from_sick_leave()
 
 
@@ -131,7 +151,7 @@ def insert_my_date():
     local_marker = True  # маркер цикла
 
     while local_marker:
-        wd_date = str(input("Введите дату выхода на рейс (пример: 2021-10-31): "))
+        wd_date = str(input("Введите дату выхода на рейс (пример: 2020-09-31): "))
 
         shift = int(input("Введите номер смены: "))
         route = str(input("""Введите номер маршрута
@@ -191,7 +211,7 @@ VALUES ({shift}, '{route}', {sh_round});
 SELECT shrr_id FROM shift_route_round
 WHERE shift = {shift} AND route = '{route}' AND round = {sh_round};
 """
-            input("Нажми Enter для продолжения...")
+            input("\nНажми Enter для продолжения...\n")
             local_marker = False
         elif x == "0":
             print("\n Введите данные заново, и будьте внимательней: \n")
@@ -224,7 +244,7 @@ def insert_my_ticket():
     print(f"Напоминаем, мы вносим данные на {wd_date} число.")
 
     for i in ticket_name:
-        x = yes_no_input(f"""Были ли проданы {i}? """)
+        x = yes_no_input(f"""\nБыли ли проданы {i}? """)
         if x == "1":
             j = float(input("Введите количество: "))
             number_of_tickets.append(j)
@@ -291,7 +311,7 @@ def insert_schedule():
     if shift_or_rush_hour == "1":
         print(f"""Время начала рейса - {first_shift[0]}, время окончания рейса - {first_shift[1]}, \
 продолжительность рейса - {first_shift[2]}.
-Желаете ли применить введенные даные для планового графика?\n
+Желаете ли применить введенные даные для планового графика?
 """)
         # Выбор пункта меню:
         x = yes_no_input("введите \'Yes\' или \'No\'. ")
@@ -340,7 +360,7 @@ VALUES ({shrr_id}, {week_id}, '{first_shift[0]}', '{first_shift[1]}', '{first_sh
         '{second_rush_hour[0]}', '{second_rush_hour[1]}', '{second_rush_hour[2]}',
         '{number_of_flights}');
 """
-        input(" Нажми Enter для продолжения...")
+        input("\n Нажми Enter для продолжения...")
 
 
 # при наличии доп маршрутов:
@@ -367,8 +387,8 @@ VALUES ({data_search}, '{flight}', {local_plan}, '{local_number_of_flights}', '{
 def some_holiday():
     global data_update
     holiday = int(input("""Введите 1, если выходной день заменяется на рабочий,
-                                   6, если рейсы в будний день ходят по расписанию субботы,
-                                   7, если рейсы в будний день ходят по расписанию воскресенья: """))
+        6, если рейсы в будний день ходят по расписанию субботы,
+        7, если рейсы в будний день ходят по расписанию воскресенья: """))
     data_update = f"""
 UPDATE working_date
 SET holiday = {holiday}
@@ -399,7 +419,7 @@ def reserve_time():
         end_of_time = ""
 
         while local_marker:
-            wd_date = str(input("Введите дату выхода на рейс (пример: 2021-10-31): "))
+            wd_date = str(input("Введите дату выхода на рейс (пример: 2020-09-31): "))
             start_of_time = str(input("Введите время начала рейса (пример: 5:00): "))
             end_of_time = str(input("Введите время окончания рейса (пример: 10:00): "))
 
@@ -440,7 +460,8 @@ INSERT INTO reserve VALUES('{wd_date}', '{start_of_time}', '{end_of_time}', '{co
         connection.close()
         print("Соединение с PostgreSQL закрыто")
 
-    input("Выход в главное меню...")
+    input("\nВыход в главное меню...\n")
+    clear()  # чистим экран консоли перед выводом меню
     main_menu()
 
 
@@ -466,8 +487,8 @@ def data_from_sick_leave():
         sick_leave = []
 
         while local_marker:
-            sick_leave.append = str(input("Введите дату открытия больничного (пример: 2021-10-31): "))
-            sick_leave.append = str(input("Введите дату закрытия больничного (пример: 2021-10-31): "))
+            sick_leave.append = str(input("Введите дату открытия больничного (пример: 2020-08-25): "))
+            sick_leave.append = str(input("Введите дату закрытия больничного (пример: 2020-09-14): "))
             sick_leave.append = str(input("Введите причину больничного (диагноз): "))  # если потребуется
 
             print("Правильно ли введены данные?\n")
@@ -506,7 +527,8 @@ VALUES ('{sick_leave[0]}', '{sick_leave[1]}', '{sick_leave[2]}')
         connection.close()
         print("Соединение с PostgreSQL закрыто")
 
-    input("Выход в главное меню...")
+    input("\nВыход в главное меню...\n")
+    clear()  # чистим экран консоли перед выводом меню
     main_menu()
 
 
@@ -627,15 +649,17 @@ WHERE shrr_id = {shrr_id} AND EXTRACT(month FROM ptfr_date) = {current_month};
 
         # плановые задания по выручке - запоминаем и заносим (создаём) в бд:
         if count_tasks == 0:
-            print("В этом месяце план на данный маршрут ещё НЕ был внесён.")
+            print("\nВ этом месяце план на данный маршрут ещё НЕ был внесён.")
             insert_plan()  # определяются переменные планов
             cursor.execute(data_insertion)
             connection.commit()
-            print("Planned task inserted successfully")
+            print("\nPlanned task inserted successfully\n")
 
         # изменяем плановые задания при их наличии в БД в случае необходимости.
         # для этого получаем уже существующие:
         else:
+            print(data_search)                                 # тестирование !!!
+            print("data_search в главном цикле ~ 640 строка")  # тестирование !!!
             cursor.execute(data_search)
             my_query = cursor.fetchall()
             for row in my_query:
@@ -644,13 +668,14 @@ WHERE shrr_id = {shrr_id} AND EXTRACT(month FROM ptfr_date) = {current_month};
                         work_days.append("NULL")
                     else:
                         work_days.append(i)
-            # выводим планы на экран и спрашиваем, нужно ли их изменять:
-            update_plan()
 
             # после тестирования УДАЛИТЬ!!!
             print(f"""work_days = {work_days}
-запрос data_search примерно на 255 строке
-так-же тестируем строку ~ 535 - \"if i == None\"""")
+запрос data_search примерно на 259 строке (я надеюсь)
+так-же тестируем строку ~ 645 - \"if i == None\"""")
+
+            # выводим планы на экран и спрашиваем, нужно ли их изменять:
+            update_plan()
 
         # если есть изменения в планах, вносим в БД:
         if work_days != work_days_new:
@@ -663,7 +688,7 @@ WHERE shrr_id = {shrr_id} AND EXTRACT(month FROM ptfr_date) = {current_month};
 
                 cursor.execute(data_update)
                 connection.commit()
-                print("Planned task updated successfully")
+                print("\nPlanned task updated successfully")
 
         work_days.clear()
         work_days_new.clear()
@@ -768,8 +793,14 @@ WHERE wd_date = '{wd_date}' AND shrr_id = {shrr_id};
         cursor.close()
         connection.close()
         print("Соединение с PostgreSQL закрыто")
-    input("Выход в главное меню...")
+    input("\nВыход в главное меню...\n")
+    clear()  # чистим экран консоли перед выводом меню
     main_menu()
 
 
+clear()  # чистим экран консоли перед выводом приветстия
+print("Вас приветствует программа ввода данных по выручке кондуктора \"АП-1\".")
+sleep(4)  # sleep time 4 seconds after printing output
+
+clear()  # чистим экран консоли перед выводом меню
 main_menu()
