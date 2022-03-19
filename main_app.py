@@ -372,6 +372,7 @@ def additional_route():
 
     flight = str(input("""Введите номер маршрута
     (буквенные маршруты дописывать кирилицей, в нижнем регистре (пример: 13а)): """))
+    week_id = int(input("Если это будний день, введите '1'. Если выходной, введите '2': "))
     local_plan = float(input("Введите план на данный маршрут (пример: 128.00): "))
     local_number_of_flights = str(input("Введите количество рейсов дополнительного маршрута (пример: 1+1): "))
     # при наличии доп маршрутов, поиск 'psch_id'
@@ -649,7 +650,7 @@ WHERE shrr_id = {shrr_id} AND EXTRACT(month FROM ptfr_date) = {current_month};
         # для этого получаем уже существующие:
         else:
             data_search = f"""
-SELECT plan_weekday, plan_saturday, plan_sunday, modified_plan FROM planned_tasks_for_revenue
+SELECT plan_weekday, plan_saturday, plan_sunday FROM planned_tasks_for_revenue
 WHERE shrr_id = {shrr_id} AND EXTRACT(month FROM ptfr_date) = {current_month};
 """
             cursor.execute(data_search)
