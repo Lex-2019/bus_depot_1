@@ -1,6 +1,5 @@
 import psycopg
 from psycopg import Error
-# import os
 # import os module
 from os import system, name
 # sleep module to display output for some time period
@@ -22,10 +21,10 @@ wd_date = ""
 shift = 0
 route = ""
 sh_round = None
-# придумать отдельное правило для 21 и 52 маршрутов (те, что без выходов)
 comment = None
 current_year = None
 current_month = None
+# придумать отдельное правило для 21 и 52 маршрутов (те, что без выходов)...
 
 # информация с БУЛа / график по плану:
 shrr_id = 0
@@ -33,6 +32,7 @@ week_id = 0
 proceeds = 0.0
 number_of_flights = ""
 waybill = 0
+modified_plan = None
 first_shift = []       # время первой смены / пика
 second_rush_hour = []  # время второго пика
 shift_or_rush_hour = 0
@@ -42,15 +42,12 @@ work_days = []
 work_days_new = []
 someday_ru = ["план на БУДНИЙ ДЕНЬ",
               "план на субботу",
-              "план на воскресенье",
-              "модифицированный план"]
+              "план на воскресенье"]
 someday_en = ["plan_weekday",
               "plan_saturday",
-              "plan_sunday",
-              "modified_plan"]
+              "plan_sunday"]
 
 # дополнительные маршруты:
-psch_id = 0
 flight = ""
 local_plan = 0.0
 local_number_of_flights = 1
@@ -66,8 +63,8 @@ def get_input(digit, message):
     return ret
     # пример вызова функции:
     # print(" Ставлю на...")
-    # print("    1. Чётное (выигрыш 1:1)")
-    # print("    2. Нечётное (выигрыш 1:1)")
+    # print("    1. Чётное")
+    # print("    2. Нечётное")
     # print("    0. Возврат в предыдущее меню")
     # x = get_input("012", "    Ваш выбор? ")
 
@@ -81,7 +78,7 @@ def yes_no_input(message):
 
     while (local_marker
            and user.upper() not in ("YES", "Y", "НУЫ", "Н", "NO", "N", "ТЩ", "Т")):
-        user = input("\nВаш ответ?\n")
+        user = input("\nВаш ответ? ")
 
         # если ДА:
         if user.upper() in ("YES", "Y", "НУЫ", "Н"):
@@ -95,14 +92,14 @@ def yes_no_input(message):
 
         # проверка на ввод числа:
         elif user.isdigit():
-            print("\nПожалуйста, будьте внимательныю Введите 'yes' или 'no'.\n")
+            print("\nПожалуйста, будьте внимательныю Введите 'yes' или 'no'. ")
 
     return user
     # примерный вызов функции:
     # yes_no_input("Пожалуйста введите \'yes\' или \'no\'. ")
 
 
-# define the clear function
+# определение функции очистки экрана (консоли)
 def clear():
     # for windows
     if name == 'nt':
@@ -144,7 +141,7 @@ def main_menu():
 
 # ввод данных "с путевого листа о рейсе" в случае необходимости:
 def insert_my_date():
-    global wd_date, shift, route, sh_round, proceeds, number_of_flights, waybill, \
+    global wd_date, shift, route, sh_round, proceeds, number_of_flights, waybill, modified_plan,\
         first_shift, second_rush_hour, shift_or_rush_hour, \
         record_search, create_id, data_search
 
@@ -163,8 +160,16 @@ def insert_my_date():
         number_of_flights = str(input("Введите количество выполненных рейсов (пример: 9+1): "))
         waybill = int(input("Введите номер путевого листа: "))
 
+        print("\nБыл ли в этот день изменён план (сход машины, замена в резерве и пр.)?")
+        x = yes_no_input("  введите \'Yes\' или \'No\'. ")
+
+        if x == "1":
+            modified_plan = float(input("Введите изменённый (модифицированный) план: "))
+        elif x == "0":
+            modified_plan = "NULL"
+
         print("\nДанный график \"1\" - сменный или \"2\" - пиковой?")
-        shift_or_rush_hour = get_input("12", "    Ваш выбор? \n")
+        shift_or_rush_hour = get_input("12", "  Ваш выбор?\n")
 
         if shift_or_rush_hour == "1":
             first_shift.append(str(input("Введите время начала рейса по факту (пример: 14:10): ")))
@@ -182,7 +187,9 @@ def insert_my_date():
             first_shift.append(str(input("Введите фактическую продолжительность рейса 1-го пика (пример: 2:10): ")))
             second_rush_hour.append(str(input("Введите время начала рейса 2-го пика (пример: 14:25): ")))
             second_rush_hour.append(str(input("Введите время окончания рейса 2-го пика (пример: 20:20): ")))
-            second_rush_hour.append(str(input("Введите фактическую продолжительность рейса 2-го пика (пример: 4:35): ")))
+            second_rush_hour.append(
+                str(input("Введите фактическую продолжительность рейса 2-го пика (пример: 4:35): ")))
+
             print(f"""\n    Давайте проверим введенные данные.
 Ваша смена - {shift}, маршрут номер "{route}", выход - {sh_round}.
 Дата рейса - {wd_date}.
@@ -193,7 +200,7 @@ def insert_my_date():
 """)
         print("Правильно ли введены данные?\n")
         # Выбор пункта меню:
-        x = yes_no_input("введите \'Yes\' или \'No\'. ")
+        x = yes_no_input("  введите \'Yes\' или \'No\'. ")
 
         if x == "1":
             # проверяем наличие id смены/маршрута/выхода:
@@ -261,13 +268,13 @@ INSERT INTO ticket VALUES ('{wd_date}',
 
 # плановые задания по выручке:
 def insert_plan():
-    global work_days, someday_ru, data_insertion, data_search,\
+    global work_days, someday_ru, data_insertion,\
         current_year, current_month
 
-    print(f"Напоминаю, что мы вносим данные на {wd_date} число.\n")
+    print(f"Напоминаю, что мы вносим данные на {wd_date} число.")
 
     for i in someday_ru:
-        x = yes_no_input(f"Надо ли внести {i}? ")
+        x = yes_no_input(f"\nНадо ли внести {i}? ")
         if x == "1":
             work_days.append(float(input("Введите план: ")))
         else:
@@ -276,11 +283,7 @@ def insert_plan():
     data_insertion = f"""
 INSERT INTO planned_tasks_for_revenue
 VALUES ('20{current_year}-{current_month}-01', {shrr_id},
-        {work_days[0]}, {work_days[1]}, {work_days[2]}, {work_days[3]});
-"""
-    data_search = f"""
-SELECT plan_weekday, plan_saturday, plan_sunday, modified_plan FROM planned_tasks_for_revenue
-WHERE shrr_id = {shrr_id} AND EXTRACT(month FROM ptfr_date) = {current_month};
+        {work_days[0]}, {work_days[1]}, {work_days[2]});
 """
 
 
@@ -306,7 +309,7 @@ def insert_schedule():
     week_id = int(input("Если это будний день, введите '1'. Если выходной, введите '2': "))
     number_of_flights = str(input("Введите количество рейсов по плану (пример: 9+1): "))
 
-    print("\n    При вводе данных по фактически отработанному времени у вас созранились следующие данные:")
+    print("\n    При вводе данных по фактически отработанному времени у вас сохранились следующие данные:")
     # График "1" - сменный, "2" - пиковой:
     if shift_or_rush_hour == "1":
         print(f"""Время начала рейса - {first_shift[0]}, время окончания рейса - {first_shift[1]}, \
@@ -314,7 +317,7 @@ def insert_schedule():
 Желаете ли применить введенные даные для планового графика?
 """)
         # Выбор пункта меню:
-        x = yes_no_input("введите \'Yes\' или \'No\'. ")
+        x = yes_no_input("  введите \'Yes\' или \'No\'. ")
         if x == "1":
             pass
         elif x == "0":
@@ -339,7 +342,7 @@ VALUES ({shrr_id}, {week_id}, '{first_shift[0]}', '{first_shift[1]}', '{first_sh
 Желаете ли применить введенные даные для планового графика?\n
 """)
         # Выбор пункта меню:
-        x = yes_no_input("введите \'Yes\' или \'No\'. ")
+        x = yes_no_input("  введите \'Yes\' или \'No\'. ")
         if x == "1":
             pass
         elif x == "0":
@@ -365,18 +368,17 @@ VALUES ({shrr_id}, {week_id}, '{first_shift[0]}', '{first_shift[1]}', '{first_sh
 
 # при наличии доп маршрутов:
 def additional_route():
-    global flight, local_plan, local_number_of_flights, data_search, data_insertion
+    global flight, local_plan, local_number_of_flights, week_id, data_search, data_insertion
 
     flight = str(input("""Введите номер маршрута
     (буквенные маршруты дописывать кирилицей, в нижнем регистре (пример: 13а)): """))
     local_plan = float(input("Введите план на данный маршрут (пример: 128.00): "))
-    local_number_of_flights = int(input("Введите количество рейсов дополнительного маршрута (пример: 1+1): "))
+    local_number_of_flights = str(input("Введите количество рейсов дополнительного маршрута (пример: 1+1): "))
     # при наличии доп маршрутов, поиск 'psch_id'
     data_search = f"""
 SELECT psch_id FROM planned_schedule WHERE shrr_id = {shrr_id} AND week_id = {week_id};
 """
     # при наличии доп маршрутов, вставка:
-    # возможно придется вывести запрос в основную функцию...
     data_insertion = f"""
 INSERT INTO flight (psch_id, flight, plan, number_of_flights, f_date) 
 VALUES ({data_search}, '{flight}', {local_plan}, '{local_number_of_flights}', '{wd_date}');
@@ -398,12 +400,11 @@ WHERE wd_date = '{wd_date}';
 
 # вносим данные о резерве:
 def reserve_time():
-    global cursor, connection, data_insertion, wd_date, comment
+    global cursor, connection, data_insertion
 
     print(f"\n Давайте введем данные о резерве. \n")
 
     try:
-        # Подключение к существующей базе данных
         schema = "bus_depot_1"
         connection = psycopg.connect(host="localhost",
                                      port=5432,
@@ -415,26 +416,24 @@ def reserve_time():
         cursor = connection.cursor()
 
         local_marker = True
-        start_of_time = ""
-        end_of_time = ""
+        time_of_reserve = []
 
         while local_marker:
-            wd_date = str(input("Введите дату выхода на рейс (пример: 2020-09-31): "))
-            start_of_time = str(input("Введите время начала рейса (пример: 5:00): "))
-            end_of_time = str(input("Введите время окончания рейса (пример: 10:00): "))
+            time_of_reserve.append(str(input("Введите дату резерва (пример: 2020-09-31): ")))
+            time_of_reserve.append(str(input("Введите время начала рейса (пример: 5:00): ")))
+            time_of_reserve.append(str(input("Введите время окончания рейса (пример: 10:00): ")))
 
             x = yes_no_input(f"\nНадо ли добавить комментарий? ")
             if x == "1":
-                comment = str(input("\nВведите комментарий к данному резерву: "))
+                time_of_reserve.append(str(input("\nВведите комментарий к данному резерву: \n")))
 
-            print("Правильно ли введены данные?\n")
+            print("\nПравильно ли введены данные?")
             print(f"""
-Время начала рейса: {start_of_time},
-Время окончания рейса: {end_of_time},
-Комментарий: {comment}.
+Время начала рейса: {time_of_reserve[1]},
+Время окончания рейса: {time_of_reserve[2]},
+Комментарий: {time_of_reserve[3]}.
 """)
-            # Выбор пункта меню:
-            x = yes_no_input("введите \'Yes\' или \'No\'. ")
+            x = yes_no_input("  введите \'Yes\' или \'No\'. ")
 
             if x == "1":
                 input("Нажми Enter для продолжения...")
@@ -443,19 +442,18 @@ def reserve_time():
                 print("\n Введите данные заново, и будьте внимательней: \n")
 
         data_insertion = f"""
-INSERT INTO reserve VALUES('{wd_date}', '{start_of_time}', '{end_of_time}', '{comment}');
+INSERT INTO reserve (r_date, start_of_time, end_of_time, note)
+VALUES('{time_of_reserve[0]}', '{time_of_reserve[1]}', '{time_of_reserve[2]}', '{time_of_reserve[3]}');
 """
         cursor.execute(data_insertion)
         connection.commit()
         print("Reserve inserted successfully")
-        comment = None  # обнуляем переменную комментария для последующих вставок/изменений
+        time_of_reserve.clear()
 
     except (Exception, Error) as error:
         print("Ошибка при работе с PostgreSQL", error)
 
     finally:
-        # if connection:
-        # Close the cursor and connection to so the server can allocate bandwidth to other requests
         cursor.close()
         connection.close()
         print("Соединение с PostgreSQL закрыто")
@@ -472,7 +470,6 @@ def data_from_sick_leave():
     print(f"\n Давайте введем данные о больничном. \n")
 
     try:
-        # Подключение к существующей базе данных
         schema = "bus_depot_1"
         connection = psycopg.connect(host="localhost",
                                      port=5432,
@@ -487,18 +484,17 @@ def data_from_sick_leave():
         sick_leave = []
 
         while local_marker:
-            sick_leave.append = str(input("Введите дату открытия больничного (пример: 2020-08-25): "))
-            sick_leave.append = str(input("Введите дату закрытия больничного (пример: 2020-09-14): "))
-            sick_leave.append = str(input("Введите причину больничного (диагноз): "))  # если потребуется
+            sick_leave.append(str(input("Введите дату открытия больничного (пример: 2020-08-25): ")))
+            sick_leave.append(str(input("Введите дату закрытия больничного (пример: 2020-09-14): ")))
+            sick_leave.append(str(input("Введите причину больничного (диагноз): ")))
 
-            print("Правильно ли введены данные?\n")
+            print("\nПравильно ли введены данные?")
             print(f"""
 Дата открытия больничного: {sick_leave[0]},
 Дата закрытия больничного: {sick_leave[1]},
 Причина больничного (диагноз): {sick_leave[2]}.
 """)
-            # Выбор пункта меню:
-            x = yes_no_input("введите \'Yes\' или \'No\'. ")
+            x = yes_no_input("  введите \'Yes\' или \'No\'. ")
 
             if x == "1":
                 input("Нажми Enter для продолжения...")
@@ -521,8 +517,6 @@ VALUES ('{sick_leave[0]}', '{sick_leave[1]}', '{sick_leave[2]}')
         print("Ошибка при работе с PostgreSQL", error)
 
     finally:
-        # if connection:
-        # Close the cursor and connection to so the server can allocate bandwidth to other requests
         cursor.close()
         connection.close()
         print("Соединение с PostgreSQL закрыто")
@@ -558,9 +552,6 @@ SELECT MAX(wd_date) FROM working_date;
         my_query = cursor.fetchone()
         wd_date = my_query[0]
 
-# Настоятельно рекомендую придумать, как сделать выбор внесения данных - рейса ИЛИ резерва - в НАЧАЛЕ работы программы.
-# Потому как до резерва поди достучись!
-
         # работаем с данными с БУЛа и путевого листа:
         print(f"\nПоследняя запись в базе данных датирована {wd_date}.\n")
         print("Давайте внесем данные с БУЛа и путевого листа: \n")
@@ -577,38 +568,36 @@ SELECT MAX(wd_date) FROM working_date;
         if count_id == 0:
             # создаем shrr_id:
             cursor.execute(create_id)
-            connection.commit()  # коммитим вставку данных
+            connection.commit()
             print("shrr_id created successfully")
 
-            # вытягиваем shrr_id из таблиц:
+            # вытягиваем созданный shrr_id из таблиц:
             cursor.execute(data_search)
             my_query = cursor.fetchone()
             shrr_id = my_query[0]
         else:
-            # вытягиваем shrr_id из таблиц:
+            # вытягиваем существующий shrr_id из таблиц:
             cursor.execute(data_search)
             my_query = cursor.fetchone()
             shrr_id = my_query[0]
 
-            # connect_postgres()  # рекурсивный вызов функции ??
-
         # вносим данные с путевого и була:
         data_insertion = f"""
-INSERT INTO working_date (wd_date, shrr_id, proceeds, number_of_flights, waybill,
+INSERT INTO working_date (wd_date, shrr_id, proceeds, number_of_flights, waybill, modified_plan,
                           start_of_time, end_of_time, time_duration)
-VALUES ('{wd_date}', {shrr_id}, {proceeds}, '{number_of_flights}', {waybill},
+VALUES ('{wd_date}', {shrr_id}, {proceeds}, '{number_of_flights}', {waybill}, {modified_plan},
         '{first_shift[0]}', '{first_shift[1]}', '{first_shift[2]}');
 """
         cursor.execute(data_insertion)
-        connection.commit()  # коммитим вставку данных
+        connection.commit()
         print("Date from waybill inserted successfully")
 
         # добавляем заметки, если требуется:
-        local_marker = True  # маркер цикла
+        local_marker = True
         while local_marker:
             print("\n Желаете ли добавить заметку на данный рейс?\n")
-            # Выбор пункта меню:
-            x = yes_no_input('введите \'Yes\' или \'No\'. ')
+
+            x = yes_no_input('  введите \'Yes\' или \'No\'. ')
 
             if x == "1":
                 insert_note()
@@ -621,10 +610,10 @@ VALUES ('{wd_date}', {shrr_id}, {proceeds}, '{number_of_flights}', {waybill},
         comment = None  # обнуляем переменную комментария для последующих вставок/изменений
 
         # проездные, если требуется:
-        local_marker = True  # маркер цикла
+        local_marker = True
         while local_marker:
             print("\n Желаете ли добавить информацию о проданных проездных?\n")
-            x = yes_no_input('введите \'Yes\' или \'No\'. ')
+            x = yes_no_input('  введите \'Yes\' или \'No\'. ')
 
             if x == "1":
                 print("Введите информацию о проданных проездных билетах:")
@@ -650,7 +639,8 @@ WHERE shrr_id = {shrr_id} AND EXTRACT(month FROM ptfr_date) = {current_month};
         # плановые задания по выручке - запоминаем и заносим (создаём) в бд:
         if count_tasks == 0:
             print("\nВ этом месяце план на данный маршрут ещё НЕ был внесён.")
-            insert_plan()  # определяются переменные планов
+            # определяются переменные планов:
+            insert_plan()
             cursor.execute(data_insertion)
             connection.commit()
             print("\nPlanned task inserted successfully\n")
@@ -658,21 +648,18 @@ WHERE shrr_id = {shrr_id} AND EXTRACT(month FROM ptfr_date) = {current_month};
         # изменяем плановые задания при их наличии в БД в случае необходимости.
         # для этого получаем уже существующие:
         else:
-            print(data_search)                                 # тестирование !!!
-            print("data_search в главном цикле ~ 640 строка")  # тестирование !!!
+            data_search = f"""
+SELECT plan_weekday, plan_saturday, plan_sunday, modified_plan FROM planned_tasks_for_revenue
+WHERE shrr_id = {shrr_id} AND EXTRACT(month FROM ptfr_date) = {current_month};
+"""
             cursor.execute(data_search)
             my_query = cursor.fetchall()
             for row in my_query:
                 for i in row:
-                    if i == None:  # тестирование !!!
+                    if i == None:
                         work_days.append("NULL")
                     else:
                         work_days.append(i)
-
-            # после тестирования УДАЛИТЬ!!!
-            print(f"""work_days = {work_days}
-запрос data_search примерно на 259 строке (я надеюсь)
-так-же тестируем строку ~ 645 - \"if i == None\"""")
 
             # выводим планы на экран и спрашиваем, нужно ли их изменять:
             update_plan()
@@ -685,10 +672,9 @@ UPDATE planned_tasks_for_revenue
 SET {i} = {j}
 WHERE shrr_id = {shrr_id} AND EXTRACT(month FROM ptfr_date) = {current_month};
 """
-
                 cursor.execute(data_update)
                 connection.commit()
-                print("\nPlanned task updated successfully")
+            print("\nPlanned task updated successfully")
 
         work_days.clear()
         work_days_new.clear()
@@ -703,7 +689,8 @@ SELECT count(psch_id) FROM planned_schedule WHERE shrr_id = {shrr_id};
 
         # графики рейсов по плану - запоминаем и заносим (создаём) в бд:
         if count_tasks == 0:
-            insert_schedule()  # определяются переменные планов
+            # определяются переменные графиков:
+            insert_schedule()
             cursor.execute(data_insertion)
             connection.commit()
             print("planned schedule inserted successfully")
@@ -712,14 +699,15 @@ SELECT count(psch_id) FROM planned_schedule WHERE shrr_id = {shrr_id};
         second_rush_hour.clear()
 
         # при наличии доп. маршрутов:
-        local_marker = True  # маркер цикла
+        local_marker = True
         while local_marker:
             print(f"\n Желаете ли добавить дополнительный маршрут на дату {wd_date}?\n")
-            # Выбор пункта меню:
-            x = yes_no_input('введите \'Yes\' или \'No\'. ')
+
+            x = yes_no_input('  введите \'Yes\' или \'No\'. ')
 
             if x == "1":
-                additional_route()  # определяются переменные планов
+                # определяются переменные доп.маршрутов:
+                additional_route()
                 cursor.execute(data_search)  # определяется 'psch_id'
 
                 cursor.execute(data_insertion)
@@ -730,10 +718,10 @@ SELECT count(psch_id) FROM planned_schedule WHERE shrr_id = {shrr_id};
                 local_marker = False
 
         # работа в собственный выходной:
-        local_marker = True  # маркер цикла
+        local_marker = True
         while local_marker:
             print(f"\n Дата {wd_date} является рабочим днем по графику, или это выход в ваш выходной день?\n")
-            # Выбор пункта меню:
+
             x = get_input("12", "введите \'1\' если по графику, или \'2\' если это выходной день? ")
 
             if x == "1":
@@ -749,10 +737,10 @@ WHERE wd_date = '{wd_date}';
                 local_marker = False
 
         # меняем МАЗ, если требуется:
-        local_marker = True  # маркер цикла
+        local_marker = True
         while local_marker:
             print(f"\n Вы работали на длинной машине, или с короткой базой?\n")
-            # Выбор пункта меню:
+
             x = get_input("12", "введите \'1\' если был МАЗ 105(215), или \'2\' если был МАЗ 107(103)? ")
 
             if x == "1":
@@ -769,15 +757,14 @@ WHERE wd_date = '{wd_date}' AND shrr_id = {shrr_id};
                 local_marker = False
 
         # замена рабочего дня на выходной и обратно:
-        local_marker = True  # маркер цикла
+        local_marker = True
         while local_marker:
             print(f"\nБыла ли произведена замена {wd_date} с рабочего на выходной или обратно? \n")
-            # Выбор пункта меню:
-            x = yes_no_input('введите \'Yes\' или \'No\'. ')
+
+            x = yes_no_input('  введите \'Yes\' или \'No\'. ')
 
             if x == "1":
                 some_holiday()
-
                 cursor.execute(data_update)
                 connection.commit()
                 local_marker = False
