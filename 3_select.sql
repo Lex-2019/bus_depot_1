@@ -10,6 +10,13 @@ SELECT * FROM reserve WHERE EXTRACT(months FROM r_date) = 12;
 SELECT * FROM planned_schedule;
 SELECT * FROM flight;
 
+-- ...скорректированные планы по окончании месяца...
+SELECT wd_date, working_date.shrr_id, plan_weekday, plan_saturday, plan_sunday, modified_plan
+FROM working_date
+JOIN planned_tasks_for_revenue
+    ON working_date.shrr_id = planned_tasks_for_revenue.shrr_id
+WHERE EXTRACT(month FROM wd_date) = 4 AND EXTRACT(month FROM ptfr_date) = 4 ORDER BY wd_date;
+
 -- для сравнения с распечаткой в конторе:
 SELECT sum(plan) AS "план", sum(proceeds) AS "выручка", (sum(proceeds) - sum(plan)) AS "отклонение",
        CAST((sum(proceeds) * 100 / sum(plan)) AS DECIMAL(4,1)) AS "% выполнения плана",
@@ -34,7 +41,7 @@ FROM (
 		ON wd.shrr_id = shrr.shrr_id
 	RIGHT JOIN planned_tasks_for_revenue AS ptfr
 		ON shrr.shrr_id = ptfr.shrr_id
-	WHERE EXTRACT(month FROM wd_date) = 12 AND EXTRACT(month FROM ptfr_date) = 12 -- изменять согласно необходимому месяцу
+	WHERE EXTRACT(month FROM wd_date) = 4 AND EXTRACT(month FROM ptfr_date) = 4 -- изменять согласно необходимому месяцу
 ) plan_of_the_month;
 
 -- по дням:
@@ -60,7 +67,7 @@ FROM (
 		ON shrr.shrr_id = ptfr.shrr_id
 	/*JOIN planned_schedule AS ps
 	    ON shrr.shrr_id = ps.shrr_id */
-    WHERE EXTRACT(month FROM wd_date) = 12 AND EXTRACT(month FROM ptfr_date) = 12 -- изменять согласно необходимому месяцу
+    WHERE EXTRACT(month FROM wd_date) = 4 AND EXTRACT(month FROM ptfr_date) = 4 -- изменять согласно необходимому месяцу
 ) plan_of_the_month
 ORDER BY wd_date;
 
@@ -69,7 +76,7 @@ SELECT SUM(decade_only_b) AS "декада автобус",
        SUM(decade_b_and_t) AS "декада общий",
        SUM(month_only_b) AS "месяц автобус",
        SUM(month_b_and_t) AS "месяц общий"
-FROM ticket WHERE EXTRACT(month FROM t_date) = 12; -- изменять согласно необходимому месяцу
+FROM ticket WHERE EXTRACT(month FROM t_date) = 4; -- изменять согласно необходимому месяцу
 
 -- по дням:
 SELECT t_date,
@@ -83,6 +90,8 @@ LEFT JOIN working_date AS wd
     ON t_date = wd_date
 /*JOIN shift_route_round AS shrr
     ON wd.shrr_id = shrr.shrr_id*/
-WHERE EXTRACT(month FROM t_date) = 12 -- изменять согласно необходимому месяцу
+WHERE EXTRACT(month FROM t_date) = 4 -- изменять согласно необходимому месяцу
 GROUP BY t_date
 ORDER BY t_date;
+
+-- В случае модсчёта суммы выручки за проездные, учитывать изменение стоимости проездных с 9.04.2022 года.

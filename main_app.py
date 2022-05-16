@@ -421,17 +421,19 @@ def reserve_time():
 
         while local_marker:
             time_of_reserve.append(str(input("Введите дату резерва (пример: 2020-09-31): ")))
-            time_of_reserve.append(str(input("Введите время начала рейса (пример: 5:00): ")))
-            time_of_reserve.append(str(input("Введите время окончания рейса (пример: 10:00): ")))
+            time_of_reserve.append(str(input("Введите время начала резерва (пример: 5:00): ")))
+            time_of_reserve.append(str(input("Введите время окончания резерва (пример: 10:00): ")))
 
             x = yes_no_input(f"\nНадо ли добавить комментарий? ")
             if x == "1":
                 time_of_reserve.append(str(input("\nВведите комментарий к данному резерву: \n")))
+            elif x == "0":
+                time_of_reserve.append("NULL")
 
             print("\nПравильно ли введены данные?")
             print(f"""
-Время начала рейса: {time_of_reserve[1]},
-Время окончания рейса: {time_of_reserve[2]},
+Время начала резерва: {time_of_reserve[1]},
+Время окончания резерва: {time_of_reserve[2]},
 Комментарий: {time_of_reserve[3]}.
 """)
             x = yes_no_input("  введите \'Yes\' или \'No\'. ")

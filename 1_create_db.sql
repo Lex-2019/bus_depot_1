@@ -136,6 +136,7 @@ CREATE TABLE IF NOT EXISTS flight (
     plan              decimal(5,2) NOT NULL, -- план по маршрутам
     number_of_flights varchar(4)   NOT NULL, -- количество рейсов - план
     f_date            date         NOT NULL  -- дата изменений плана, мес/год
+    modified_plan     decimal(5,2) NULL      -- изменённый план после корректировки в конце месяца
 );
 
 -- -----------------------------------------------------
